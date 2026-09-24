@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Wireless Trackpad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        .trackpad-surface {
+            background: radial-gradient(circle, rgba(30,41,59,1) 0%, rgba(15,23,42,1) 100%);
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans overflow-hidden flex flex-col">
+
+    <div id="app" class="flex-1 flex flex-col h-full w-full max-w-7xl mx-auto p-4">
+        
+        <!-- Header / Role Selector View -->
+        <div id="view-mode-select" class="flex-1 flex flex-col items-center justify-center space-y-8 p-6">
+            <div class="text-center space-y-3 max-w-md">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 text-3xl mb-2 shadow-lg shadow-indigo-500/10 border border-indigo-500/30">
+                    <i class="fa-solid fa-computer-mouse"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-white">AirPad Connect</h1>
+                <p class="text-slate-400 text-sm">Turn your smartphone into a wireless trackpad and keyboard instantly. No drivers or downloads required.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
+                <button onclick="initRole('laptop')" class="group relative flex flex-col items-center p-6 bg-slate-900 border border-slate-800 rounded-2xl hover:border-indigo-500 hover:bg-slate-850 transition-all shadow-xl hover:shadow-indigo-500/10 cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-laptop"></i>
+                    </div>
+                    <span class="font-bold text-lg text-white">This is my Laptop</span>
+                    <span class="text-xs text-slate-400 mt-1 text-center">Display virtual cursor & QR code</span>
+                </button>
+
+                <button onclick="initRole('phone')" class="group relative flex flex-col items-center p-6 bg-slate-900 border border-slate-800 rounded-2xl hover:border-emerald-500 hover:bg-slate-850 transition-all shadow-xl hover:shadow-emerald-500/10 cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                    </div>
+                    <span class="font-bold text-lg text-white">This is my Phone</span>
+                    <span class="text-xs text-slate-400 mt-1 text-center">Scan QR code & use as trackpad</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- LAPTOP RECEIVER VIEW -->
+        <div id="view-laptop" class="hidden flex-1 flex flex-col h-full relative overflow-hidden bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl">
+            <!-- Top bar -->
+            <div class="flex items-center justify-between px-6 py-4 bg-slate-950/80 border-b border-slate-800 backdrop-blur">
+                <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" id="connection-status-dot"></div>
+                    <span class="font-semibold text-sm text-slate-200" id="connection-status-text">Waiting for phone connection...</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="showQrModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shadow">
+                        <i class="fa-solid fa-qrcode mr-1.5"></i> Show QR
+                    </button>
+                    <button onclick="resetApp()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition">
+                        Exit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Virtual Cursor Canvas / Workspace -->
+            <div id="laptop-workspace" class="flex-1 relative bg-slate-950 flex items-center justify-center overflow-hidden cursor-none">
+                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:24px_24px]"></div>
+                
+                <!-- Welcome instructions inside laptop screen -->
+                <div id="laptop-welcome" class="text-center z-10 max-w-md p-8 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl backdrop-blur">
+                    <div class="w-16 h-16 bg-indigo-500/10 text-indigo-400 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 border border-indigo-500/20">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white mb-2">Connect Your Phone</h2>
+                    <p class="text-sm text-slate-400 mb-6">Scan the QR code with your phone camera to instantly connect and start controlling this screen.</p>
+                    <div id="qrcode-container" class="bg-white p-3 rounded-xl inline-block shadow-inner mb-4"></div>
+                    <div class="text-xs text-slate-500 break-all px-2">
+                        Or open link: <a id="share-link-display" href="#" target="_blank" class="text-indigo-400 underline"></a>
+                    </div>
+                </div>
+
+                <!-- Virtual Cursor Element -->
+                <div id="virtual-cursor" class="hidden absolute w-6 h-6 pointer-events-none z-50 transition-transform duration-75 ease-out transform -translate-x-1 -translate-y-1">
+                    <svg class="w-full h-full drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] text-indigo-400 fill-current" viewBox="0 0 24 24">
+                        <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.45 0 .65-.54.33-.85L6.35 2.85a.5.5 0 0 0-.85.36z"/>
+                    </svg>
+                </div>
+
+                <!-- Click Ripple Effect Layer -->
+                <div id="ripple-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-40"></div>
+            </div>
+        </div>
+
+        <!-- PHONE CONTROLLER VIEW -->
+        <div id="view-phone" class="hidden flex-1 flex flex-col h-full bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
+            <!-- Phone Header -->
+            <div class="flex items-center justify-between px-4 py-3 bg-slate-950 border-b border-slate-800">
+                <div class="flex items-center space-x-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-amber-500" id="phone-conn-dot"></div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400" id="phone-conn-text">Connecting...</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="toggleKeyboard()" id="kb-toggle-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition flex items-center space-x-1">
+                        <i class="fa-solid fa-keyboard"></i><span>Type</span>
+                    </button>
+                    <button onclick="resetApp()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg transition">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Trackpad Area -->
+            <div id="trackpad" class="trackpad-surface flex-1 relative flex flex-col items-center justify-center touch-none select-none border-b border-slate-800 cursor-pointer overflow-hidden">
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
+                    <i class="fa-solid fa-hand-pointer text-4xl mb-2 text-slate-400"></i>
+                    <span class="text-xs tracking-widest uppercase font-semibold text-slate-400">Trackpad Area</span>
+                </div>
+                <!-- Finger count / gesture indicator badge -->
+                <div id="gesture-badge" class="absolute top-4 px-3 py-1 bg-slate-800/80 backdrop-blur text-slate-300 text-xs rounded-full opacity-0 transition-opacity pointer-events-none border border-slate-700">
+                    Scrolling
+                </div>
+            </div>
+
+            <!-- Bottom Mouse Buttons -->
+            <div class="grid grid-cols-2 gap-2 p-3 bg-slate-950 border-t border-slate-800">
+                <button id="btn-left" class="py-4 bg-slate-900 hover:bg-slate-800 active:bg-indigo-600 active:text-white border border-slate-800 rounded-xl font-bold text-sm text-slate-200 transition shadow-sm flex items-center justify-center space-x-2">
+                    <span>Left Click</span>
+                </button>
+                <button id="btn-right" class="py-4 bg-slate-900 hover:bg-slate-800 active:bg-indigo-600 active:text-white border border-slate-800 rounded-xl font-bold text-sm text-slate-200 transition shadow-sm flex items-center justify-center space-x-2">
+                    <span>Right Click</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Keyboard Input Modal / Drawer for Phone -->
+        <div id="keyboard-drawer" class="fixed inset-x-0 bottom-0 bg-slate-900 border-t border-slate-800 p-4 transform translate-y-full transition-transform duration-300 z-50 shadow-2xl">
+            <div class="max-w-md mx-auto space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400"><i class="fa-solid fa-keyboard mr-1"></i> Send Text / Keystrokes</span>
+                    <button onclick="toggleKeyboard()" class="text-slate-400 hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="flex space-x-2">
+                    <input type="text" id="phone-text-input" placeholder="Type text here..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <button onclick="sendTypedText()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition shadow">Send</button>
+                </div>
+                <div class="flex justify-between pt-1">
+                    <button onclick="sendSpecialKey('Enter')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-medium text-slate-300">Enter</button>
+                    <button onclick="sendSpecialKey('Backspace')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-medium text-slate-300">Backspace</button>
+                    <button onclick="sendSpecialKey('Tab')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-medium text-slate-300">Tab</button>
+                    <button onclick="sendSpecialKey('Space')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-medium text-slate-300">Space</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Modal for Laptop -->
+        <div id="qr-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+                <h3 class="text-lg font-bold text-white">Scan to Connect Phone</h3>
+                <div id="modal-qrcode-container" class="bg-white p-3 rounded-xl inline-block shadow-inner"></div>
+                <p class="text-xs text-slate-400">Point your phone's camera at the QR code to open the trackpad interface.</p>
+                <button onclick="hideQrModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition">Close</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Global state variables
+        let role = null;
+        let peer = null;
+        let conn = null;
+        let isConnected = false;
+        let myId = null;
+
+        // Helper to switch UI views
+        function switchView(viewId) {
+            ['view-mode-select', 'view-laptop', 'view-phone'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        function resetApp() {
+            if (peer) peer.destroy();
+            window.location.hash = '';
+            window.location.reload();
+        }
+
+        // Initialize role based on user choice or URL hash on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash.startsWith('room=')) {
+                const hostId = hash.substring(5);
+                initRole('phone');
+                connectToLaptopPeer(hostId);
+            } else {
+                switchView('view-mode-select');
+            }
+        });
+
+        function initRole(selectedRole) {
+            role = selectedRole;
+            if (role === 'laptop') {
+                switchView('view-laptop');
+                initLaptopPeer();
+            } else {
+                switchView('view-phone');
+                document.getElementById('phone-conn-text').innerText = 'Please scan QR code from laptop';
+            }
+        }
+
+        // ================= LAPTOP LOGIC =================
+        function initLaptopPeer() {
+            myId = 'airpad_' + Math.random().toString(36).substring(2, 8);
+            peer = new Peer(myId);
+
+            peer.on('open', (id) => {
+                const shareUrl = window.location.origin + window.location.pathname + '#room=' + id;
+                renderQRCode(shareUrl, 'qrcode-container');
+                renderQRCode(shareUrl, 'modal-qrcode-container');
+                document.getElementById('share-link-display').innerText = shareUrl;
+                document.getElementById('share-link-display').href = shareUrl;
+            });
+
+            peer.on('connection', (incomingConn) => {
+                conn = incomingConn;
+                setupLaptopConnectionHandlers();
+            });
+
+            peer.on('error', (err) => {
+                console.error('Peer error:', err);
+                document.getElementById('connection-status-text').innerText = 'Connection error. Please refresh.';
+            });
+        }
+
+        function renderQRCode(text, elementId) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            try {
+                const qr = qrcode(0, 'M');
+                qr.addData(text);
+                qr.make();
+                container.innerHTML = qr.createImgTag(5, 8);
+                const img = container.querySelector('img');
+                if (img) img.className = 'rounded-lg mx-auto';
+            } catch (e) {
+                container.innerText = 'Error generating QR code';
+            }
+        }
+
+        function showQrModal() {
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function hideQrModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
+
+        // Virtual Cursor State
+        let cursorX = window.innerWidth / 2;
+        let cursorY = window.innerHeight / 2;
+        const speedMultiplier = 1.6;
+
+        function updateVirtualCursorPosition(dx, dy) {
+            cursorX += dx * speedMultiplier;
+            cursorY += dy * speedMultiplier;
+
+            cursorX = Math.max(0, Math.min(window.innerWidth, cursorX));
+            cursorY = Math.max(0, Math.min(window.innerHeight, cursorY));
+
+            const cursorEl = document.getElementById('virtual-cursor');
+            cursorEl.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
+        }
+
+        function triggerClickAnimation(type) {
+            const cursorEl = document.getElementById('virtual-cursor');
+            cursorEl.classList.add('scale-75', 'text-emerald-400');
+            setTimeout(() => cursorEl.classList.remove('scale-75', 'text-emerald-400'), 150);
+
+            const ripple = document.createElement('div');
+            ripple.className = 'absolute rounded-full border-2 border-indigo-400/80 animate-ping pointer-events-none';
+            ripple.style.width = '30px';
+            ripple.style.height = '30px';
+            ripple.style.left = (cursorX - 15) + 'px';
+            ripple.style.top = (cursorY - 15) + 'px';
+            ripple.style.animationDuration = '400ms';
+            
+            document.getElementById('ripple-layer').appendChild(ripple);
+            setTimeout(() => ripple.remove(), 400);
+        }
+
+        function setupLaptopConnectionHandlers() {
+            conn.on('open', () => {
+                isConnected = true;
+                document.getElementById('connection-status-dot').className = 'w-3 h-3 rounded-full bg-emerald-500';
+                document.getElementById('connection-status-text').innerText = 'Phone connected wirelessly!';
+                document.getElementById('laptop-welcome').classList.add('hidden');
+                document.getElementById('virtual-cursor').classList.remove('hidden');
+            });
+
+            conn.on('data', (data) => {
+                handleIncomingMouseData(data);
+            });
+
+            conn.on('close', () => {
+                isConnected = false;
+                document.getElementById('connection-status-dot').className = 'w-3 h-3 rounded-full bg-red-500';
+                document.getElementById('connection-status-text').innerText = 'Phone disconnected.';
+                document.getElementById('virtual-cursor').classList.add('hidden');
+                document.getElementById('laptop-welcome').classList.remove('hidden');
+            });
+        }
+
+        function handleIncomingMouseData(data) {
+            if (data.type === 'move') {
+                updateVirtualCursorPosition(data.dx, data.dy);
+            } else if (data.type === 'click') {
+                triggerClickAnimation(data.button);
+            } else if (data.type === 'scroll') {
+                window.scrollBy({ top: data.dy, behavior: 'smooth' });
+            } else if (data.type === 'text') {
+                console.log('Received text:', data.text);
+            }
+        }
+
+        // ================= PHONE LOGIC =================
+        function connectToLaptopPeer(hostId) {
+            document.getElementById('phone-conn-text').innerText = 'Connecting to laptop...';
+            peer = new Peer();
+
+            peer.on('open', () => {
+                conn = peer.connect(hostId);
+                setupPhoneConnectionHandlers();
+            });
+
+            peer.on('error', (err) => {
+                console.error('Peer connection error:', err);
+                document.getElementById('phone-conn-text').innerText = 'Failed to connect. Check QR code.';
+            });
+        }
+
+        function setupPhoneConnectionHandlers() {
+            conn.on('open', () => {
+                isConnected = true;
+                document.getElementById('phone-conn-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+                document.getElementById('phone-conn-text').innerText = 'Connected to Laptop';
+                setupTrackpadGestures();
+            });
+
+            conn.on('close', () => {
+                isConnected = false;
+                document.getElementById('phone-conn-dot').className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+                document.getElementById('phone-conn-text').innerText = 'Disconnected from Laptop';
+            });
+        }
+
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+        let touchStartTime = 0;
+
+        function setupTrackpadGestures() {
+            const trackpad = document.getElementById('trackpad');
+            const gestureBadge = document.getElementById('gesture-badge');
+
+            trackpad.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    lastTouchX = touch.clientX;
+                    lastTouchY = touch.clientY;
+                    touchStartTime = Date.now();
+                } else if (e.touches.length === 2) {
+                    lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                    lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                    gestureBadge.innerText = 'Two-Finger Scroll';
+                    gestureBadge.classList.remove('opacity-0');
+                }
+            }, { passive: false });
+
+            trackpad.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (!conn || !isConnected) return;
+
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    const dx = touch.clientX - lastTouchX;
+                    const dy = touch.clientY - lastTouchY;
+                    lastTouchX = touch.clientX;
+                    lastTouchY = touch.clientY;
+
+                    conn.send({ type: 'move', dx: dx, dy: dy });
+                } else if (e.touches.length === 2) {
+                    const currentY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                    const dy = lastTouchY - currentY;
+                    lastTouchY = currentY;
+
+                    conn.send({ type: 'scroll', dy: dy * 3 });
+                }
+            }, { passive: false });
+
+            trackpad.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                gestureBadge.classList.add('opacity-0');
+
+                if (e.changedTouches.length === 1 && (Date.now() - touchStartTime < 200)) {
+                    if (conn && isConnected) {
+                        conn.send({ type: 'click', button: 'left' });
+                    }
+                }
+            }, { passive: false });
+
+            document.getElementById('btn-left').addEventListener('click', () => {
+                if (conn && isConnected) conn.send({ type: 'click', button: 'left' });
+            });
+            document.getElementById('btn-right').addEventListener('click', () => {
+                if (conn && isConnected) conn.send({ type: 'click', button: 'right' });
+            });
+        }
+
+        function toggleKeyboard() {
+            const drawer = document.getElementById('keyboard-drawer');
+            drawer.classList.toggle('translate-y-full');
+            if (!drawer.classList.contains('translate-y-full')) {
+                document.getElementById('phone-text-input').focus();
+            }
+        }
+
+        function sendTypedText() {
+            const input = document.getElementById('phone-text-input');
+            const text = input.value;
+            if (text && conn && isConnected) {
+                conn.send({ type: 'text', text: text });
+                input.value = '';
+                toggleKeyboard();
+            }
+        }
+
+        function sendSpecialKey(keyName) {
+            if (conn && isConnected) {
+                conn.send({ type: 'text', text: '[' + keyName + ']' });
+            }
+        }
+    </script>
+</body>
+</html>
