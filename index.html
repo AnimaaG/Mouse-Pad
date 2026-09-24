@@ -3,393 +3,1080 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Wireless Trackpad</title>
+    <title>AirPad Connect</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
         body {
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
         }
+
+        input {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
         .trackpad-surface {
             background: radial-gradient(circle, rgba(30,41,59,1) 0%, rgba(15,23,42,1) 100%);
         }
+
+        .landscape-touchpad {
+            height: 100dvh;
+            width: 100vw;
+        }
+
+        @media (orientation: landscape) {
+            .phone-touchpad-view {
+                height: 100dvh;
+                width: 100vw;
+            }
+        }
     </style>
 </head>
-<body class="h-full bg-slate-950 text-slate-100 font-sans overflow-hidden flex flex-col">
 
-    <div id="app" class="flex-1 flex flex-col h-full w-full max-w-7xl mx-auto p-4">
-        
-        <!-- Header / Role Selector View -->
-        <div id="view-mode-select" class="flex-1 flex flex-col items-center justify-center space-y-8 p-6">
-            <div class="text-center space-y-3 max-w-md">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 text-3xl mb-2 shadow-lg shadow-indigo-500/10 border border-indigo-500/30">
-                    <i class="fa-solid fa-computer-mouse"></i>
-                </div>
-                <h1 class="text-3xl font-extrabold tracking-tight text-white">AirPad Connect</h1>
-                <p class="text-slate-400 text-sm">Turn your smartphone into a wireless trackpad and keyboard instantly.</p>
+<body class="h-full bg-slate-950 text-slate-100 font-sans overflow-hidden">
+
+<div id="app" class="h-full w-full">
+
+    <!-- PC SETUP VIEW -->
+    <div id="view-pc-setup" class="h-full w-full flex flex-col items-center justify-center p-6">
+        <div class="text-center max-w-md w-full">
+
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 text-3xl mb-5 border border-indigo-500/30">
+                <i class="fa-solid fa-computer-mouse"></i>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
-                <button onclick="initRole('laptop')" class="group relative flex flex-col items-center p-6 bg-slate-900 border border-slate-800 rounded-2xl hover:border-indigo-500 transition-all shadow-xl cursor-pointer">
-                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl mb-4">
-                        <i class="fa-solid fa-laptop"></i>
+            <h1 class="text-3xl font-extrabold tracking-tight text-white">
+                AirPad Connect
+            </h1>
+
+            <p class="text-slate-400 text-sm mt-3">
+                Turn your smartphone into a wireless mouse for this PC.
+            </p>
+
+            <div class="mt-8 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl text-left">
+
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 shrink-0 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold">
+                        1
                     </div>
-                    <span class="font-bold text-lg text-white">This is my Laptop</span>
-                    <span class="text-xs text-slate-400 mt-1 text-center">Display virtual cursor & QR code</span>
+
+                    <div>
+                        <h2 class="font-bold text-white">
+                            Install PC Receiver
+                        </h2>
+
+                        <p class="text-xs text-slate-400 mt-1">
+                            Download and run the receiver on this PC.
+                        </p>
+                    </div>
+                </div>
+
+                <a
+                    href="/MousePadReceiver.exe"
+                    download
+                    class="mt-6 w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition"
+                >
+                    <i class="fa-solid fa-download"></i>
+                    Download Receiver.exe
+                </a>
+
+                <p class="text-xs text-slate-500 text-center mt-3">
+                    After installing, start MousePadReceiver.exe.
+                </p>
+
+                <button
+                    id="btn-receiver-done"
+                    onclick="receiverInstalled()"
+                    class="mt-5 w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl transition"
+                >
+                    <i class="fa-solid fa-check mr-2"></i>
+                    Done — Continue
                 </button>
 
-                <button onclick="initRole('phone')" class="group relative flex flex-col items-center p-6 bg-slate-900 border border-slate-800 rounded-2xl hover:border-emerald-500 transition-all shadow-xl cursor-pointer">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-4">
-                        <i class="fa-solid fa-mobile-screen"></i>
+            </div>
+
+            <div id="setup-error" class="hidden mt-4 text-sm text-red-400"></div>
+
+        </div>
+    </div>
+
+
+    <!-- PC CONNECTION VIEW -->
+    <div id="view-pc-connect" class="hidden h-full w-full flex flex-col">
+
+        <div class="flex items-center justify-between px-6 py-4 bg-slate-950 border-b border-slate-800">
+
+            <div class="flex items-center gap-3">
+
+                <div
+                    id="pc-status-dot"
+                    class="w-3 h-3 rounded-full bg-amber-500"
+                ></div>
+
+                <span
+                    id="pc-status-text"
+                    class="font-semibold text-sm text-slate-200"
+                >
+                    Waiting for receiver...
+                </span>
+
+            </div>
+
+            <button
+                onclick="resetToSetup()"
+                class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg"
+            >
+                Exit
+            </button>
+
+        </div>
+
+
+        <div class="flex-1 flex items-center justify-center p-6">
+
+            <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center shadow-2xl">
+
+                <div
+                    id="pc-loading"
+                    class="flex flex-col items-center"
+                >
+
+                    <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-2xl mb-5">
+                        <i class="fa-solid fa-link"></i>
                     </div>
-                    <span class="font-bold text-lg text-white">This is my Phone</span>
-                    <span class="text-xs text-slate-400 mt-1 text-center">Scan QR code & use as trackpad</span>
-                </button>
-            </div>
-        </div>
 
-        <!-- LAPTOP RECEIVER VIEW -->
-        <div id="view-laptop" class="hidden flex-1 flex flex-col h-full relative overflow-hidden bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl">
-            <div class="flex items-center justify-between px-6 py-4 bg-slate-950/80 border-b border-slate-800 backdrop-blur">
-                <div class="flex items-center space-x-3">
-                    <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" id="connection-status-dot"></div>
-                    <span class="font-semibold text-sm text-slate-200" id="connection-status-text">Initializing server connection...</span>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <button onclick="showQrModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shadow">
-                        <i class="fa-solid fa-qrcode mr-1.5"></i> Show QR
-                    </button>
-                    <button onclick="resetApp()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition">Exit</button>
-                </div>
-            </div>
+                    <h2 class="text-xl font-bold text-white">
+                        Connect Your Phone
+                    </h2>
 
-            <div id="laptop-workspace" class="flex-1 relative bg-slate-950 flex items-center justify-center overflow-hidden cursor-none">
-                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:24px_24px]"></div>
-                
-                <div id="laptop-welcome" class="text-center z-10 max-w-md p-8 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl backdrop-blur">
-                    <div class="w-16 h-16 bg-indigo-500/10 text-indigo-400 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 border border-indigo-500/20">
-                        <i class="fa-solid fa-qrcode"></i>
+                    <p
+                        id="pc-instruction"
+                        class="text-sm text-slate-400 mt-2"
+                    >
+                        Starting PC receiver...
+                    </p>
+
+                    <div
+                        id="qr-container"
+                        class="hidden mt-6 bg-white p-4 rounded-xl"
+                    ></div>
+
+                    <div
+                        id="pc-address"
+                        class="hidden mt-4 text-xs text-slate-500 break-all"
+                    ></div>
+
+                    <div
+                        id="pc-waiting"
+                        class="hidden mt-5 text-sm text-amber-400"
+                    >
+                        <i class="fa-solid fa-spinner fa-spin mr-2"></i>
+                        Waiting for phone...
                     </div>
-                    <h2 class="text-xl font-bold text-white mb-2">Connect Your Phone</h2>
-                    <p class="text-sm text-slate-400 mb-6">Scan the QR code with your phone camera to connect.</p>
-                    <div id="qrcode-container" class="bg-white p-3 rounded-xl inline-block shadow-inner mb-4"></div>
-                    <div class="text-xs text-slate-500 break-all px-2">
-                        Link: <a id="share-link-display" href="#" target="_blank" class="text-indigo-400 underline"></a>
+
+                </div>
+
+                <div
+                    id="pc-connected"
+                    class="hidden"
+                >
+
+                    <div class="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-5">
+                        <i class="fa-solid fa-check"></i>
                     </div>
+
+                    <h2 class="text-xl font-bold text-white">
+                        Phone Connected
+                    </h2>
+
+                    <p class="text-sm text-slate-400 mt-2">
+                        Your phone can now control this PC.
+                    </p>
+
                 </div>
 
-                <div id="virtual-cursor" class="hidden absolute w-6 h-6 pointer-events-none z-50 transition-transform duration-75 ease-out transform -translate-x-1 -translate-y-1">
-                    <svg class="w-full h-full drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] text-indigo-400 fill-current" viewBox="0 0 24 24">
-                        <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.45 0 .65-.54.33-.85L6.35 2.85a.5.5 0 0 0-.85.36z"/>
-                    </svg>
-                </div>
-                <div id="ripple-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-40"></div>
             </div>
+
         </div>
+    </div>
 
-        <!-- PHONE CONTROLLER VIEW -->
-        <div id="view-phone" class="hidden flex-1 flex flex-col h-full bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between px-4 py-3 bg-slate-950 border-b border-slate-800">
-                <div class="flex items-center space-x-2">
-                    <div class="w-2.5 h-2.5 rounded-full bg-amber-500" id="phone-conn-dot"></div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400" id="phone-conn-text">Connecting...</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button onclick="toggleKeyboard()" id="kb-toggle-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition flex items-center space-x-1">
-                        <i class="fa-solid fa-keyboard"></i><span>Type</span>
-                    </button>
-                    <button onclick="resetApp()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg transition"><i class="fa-solid fa-power-off"></i></button>
-                </div>
+
+    <!-- PHONE CONNECTION VIEW -->
+    <div id="view-phone-connect" class="hidden h-full w-full flex items-center justify-center p-6">
+
+        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center shadow-2xl">
+
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-5">
+                <i class="fa-solid fa-mobile-screen-button"></i>
             </div>
 
-            <div id="trackpad" class="trackpad-surface flex-1 relative flex flex-col items-center justify-center touch-none select-none border-b border-slate-800 cursor-pointer overflow-hidden">
-                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
-                    <i class="fa-solid fa-hand-pointer text-4xl mb-2 text-slate-400"></i>
-                    <span class="text-xs tracking-widest uppercase font-semibold text-slate-400">Trackpad Area</span>
-                </div>
-                <div id="gesture-badge" class="absolute top-4 px-3 py-1 bg-slate-800/80 backdrop-blur text-slate-300 text-xs rounded-full opacity-0 transition-opacity pointer-events-none border border-slate-700">Scrolling</div>
+            <h2 class="text-xl font-bold text-white">
+                Connecting to PC
+            </h2>
+
+            <p
+                id="phone-status"
+                class="text-sm text-slate-400 mt-2"
+            >
+                Connecting...
+            </p>
+
+            <div class="mt-6">
+                <i
+                    id="phone-spinner"
+                    class="fa-solid fa-spinner fa-spin text-indigo-400 text-2xl"
+                ></i>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 p-3 bg-slate-950 border-t border-slate-800">
-                <button id="btn-left" class="py-4 bg-slate-900 hover:bg-slate-800 active:bg-indigo-600 active:text-white border border-slate-800 rounded-xl font-bold text-sm text-slate-200 transition shadow-sm flex items-center justify-center"><span>Left Click</span></button>
-                <button id="btn-right" class="py-4 bg-slate-900 hover:bg-slate-800 active:bg-indigo-600 active:text-white border border-slate-800 rounded-xl font-bold text-sm text-slate-200 transition shadow-sm flex items-center justify-center"><span>Right Click</span></button>
-            </div>
-        </div>
+            <button
+                onclick="location.href = location.pathname"
+                class="hidden mt-6 w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl"
+                id="phone-retry"
+            >
+                Try Again
+            </button>
 
-        <!-- Keyboard Input Drawer -->
-        <div id="keyboard-drawer" class="fixed inset-x-0 bottom-0 bg-slate-900 border-t border-slate-800 p-4 transform translate-y-full transition-transform duration-300 z-50 shadow-2xl">
-            <div class="max-w-md mx-auto space-y-3">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400"><i class="fa-solid fa-keyboard mr-1"></i> Send Text</span>
-                    <button onclick="toggleKeyboard()" class="text-slate-400 hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <div class="flex space-x-2">
-                    <input type="text" id="phone-text-input" placeholder="Type text here..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
-                    <button onclick="sendTypedText()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition shadow">Send</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- QR Modal -->
-        <div id="qr-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
-                <h3 class="text-lg font-bold text-white">Scan to Connect Phone</h3>
-                <div id="modal-qrcode-container" class="bg-white p-3 rounded-xl inline-block shadow-inner"></div>
-                <button onclick="hideQrModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition">Close</button>
-            </div>
         </div>
 
     </div>
 
-    <script>
-        let role = null;
-        let peer = null;
-        let conn = null;
-        let isConnected = false;
-        let myId = null;
 
-        function switchView(viewId) {
-            ['view-mode-select', 'view-laptop', 'view-phone'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-            document.getElementById(viewId).classList.remove('hidden');
-        }
+    <!-- PHONE TOUCHPAD VIEW -->
+    <div
+        id="view-phone"
+        class="hidden phone-touchpad-view h-full w-full bg-slate-950"
+    >
 
-        function resetApp() {
-            if (peer) peer.destroy();
-            window.location.hash = '';
-            window.location.reload();
-        }
+        <div class="h-full w-full flex flex-col">
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const hash = window.location.hash.substring(1);
-            if (hash.startsWith('room=')) {
-                const hostId = hash.substring(5);
-                initRole('phone');
-                connectToLaptopPeer(hostId);
-            } else {
-                switchView('view-mode-select');
+            <div class="flex items-center justify-between px-4 py-3 bg-slate-950 border-b border-slate-800 shrink-0">
+
+                <div class="flex items-center gap-2">
+
+                    <div
+                        id="phone-conn-dot"
+                        class="w-2.5 h-2.5 rounded-full bg-amber-500"
+                    ></div>
+
+                    <span
+                        id="phone-conn-text"
+                        class="text-xs font-bold uppercase tracking-wider text-slate-400"
+                    >
+                        Connecting
+                    </span>
+
+                </div>
+
+                <button
+                    onclick="disconnectPhone()"
+                    class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg"
+                >
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+
+            </div>
+
+
+            <div
+                id="trackpad"
+                class="trackpad-surface flex-1 relative touch-none select-none overflow-hidden"
+            >
+
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
+
+                    <i class="fa-solid fa-hand-pointer text-4xl mb-3 text-slate-400"></i>
+
+                    <span class="text-xs tracking-widest uppercase font-semibold text-slate-400">
+                        Touchpad
+                    </span>
+
+                </div>
+
+                <div
+                    id="gesture-badge"
+                    class="absolute top-5 left-1/2 -translate-x-1/2 px-3 py-1 bg-slate-800/80 backdrop-blur text-slate-300 text-xs rounded-full opacity-0 transition-opacity pointer-events-none border border-slate-700"
+                >
+                    Scrolling
+                </div>
+
+            </div>
+
+
+            <div class="grid grid-cols-2 gap-2 p-3 bg-slate-950 border-t border-slate-800 shrink-0">
+
+                <button
+                    id="btn-left"
+                    class="py-4 bg-slate-900 active:bg-indigo-600 border border-slate-800 rounded-xl font-bold text-sm text-slate-200"
+                >
+                    Left Click
+                </button>
+
+                <button
+                    id="btn-right"
+                    class="py-4 bg-slate-900 active:bg-indigo-600 border border-slate-800 rounded-xl font-bold text-sm text-slate-200"
+                >
+                    Right Click
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ERROR MODAL -->
+    <div
+        id="error-modal"
+        class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-5"
+    >
+
+        <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center">
+
+            <div class="w-14 h-14 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center text-2xl mx-auto mb-5">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+
+            <h2 class="text-lg font-bold text-white">
+                Connection Failed
+            </h2>
+
+            <p
+                id="error-message"
+                class="text-sm text-slate-400 mt-2"
+            >
+                Unable to connect to the PC receiver.
+            </p>
+
+            <button
+                onclick="closeError()"
+                class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl"
+            >
+                Close
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let socket = null;
+
+let currentRole = null;
+
+let receiverHost = null;
+
+let receiverPort = 8765;
+
+let isConnected = false;
+
+let lastTouchX = 0;
+
+let lastTouchY = 0;
+
+let touchStartTime = 0;
+
+let touchMoved = false;
+
+let trackpadInitialized = false;
+
+let reconnectTimer = null;
+
+
+function showView(id) {
+
+    const views = [
+        "view-pc-setup",
+        "view-pc-connect",
+        "view-phone-connect",
+        "view-phone"
+    ];
+
+    views.forEach(view => {
+        document.getElementById(view).classList.add("hidden");
+    });
+
+    document.getElementById(id).classList.remove("hidden");
+}
+
+
+function receiverInstalled() {
+
+    showView("view-pc-connect");
+
+    document.getElementById("pc-status-text").innerText =
+        "Checking PC receiver...";
+
+    document.getElementById("pc-instruction").innerText =
+        "Trying to connect to MousePadReceiver.";
+
+    detectLocalReceiver();
+}
+
+
+async function detectLocalReceiver() {
+
+    try {
+
+        const response = await fetch(
+            "http://localhost:8765/",
+            {
+                method: "GET",
+                cache: "no-store"
             }
-        });
+        );
 
-        function initRole(selectedRole) {
-            role = selectedRole;
-            if (role === 'laptop') {
-                switchView('view-laptop');
-                initLaptopPeer();
-            } else {
-                switchView('view-phone');
-                document.getElementById('phone-conn-text').innerText = 'Please scan QR code from laptop';
-            }
+        if (!response.ok) {
+            throw new Error("Receiver did not respond.");
         }
 
-        // ================= LAPTOP LOGIC =================
-        function initLaptopPeer() {
-            myId = 'airpad_' + Math.random().toString(36).substring(2, 8);
-            
-            // Using explicit public PeerJS server configuration with secure options
-            peer = new Peer(myId, {
-                host: '0.peerjs.com',
-                port: 443,
-                secure: true,
-                debug: 1
-            });
+        const text = await response.text();
 
-            peer.on('open', (id) => {
-                document.getElementById('connection-status-text').innerText = 'Waiting for phone connection...';
-                const shareUrl = window.location.origin + window.location.pathname + '#room=' + id;
-                renderQRCode(shareUrl, 'qrcode-container');
-                renderQRCode(shareUrl, 'modal-qrcode-container');
-                document.getElementById('share-link-display').innerText = shareUrl;
-                document.getElementById('share-link-display').href = shareUrl;
-            });
-
-            peer.on('connection', (incomingConn) => {
-                conn = incomingConn;
-                setupLaptopConnectionHandlers();
-            });
-
-            peer.on('error', (err) => {
-                console.error('Peer error:', err);
-                document.getElementById('connection-status-text').innerText = 'Signaling error. Please refresh page.';
-            });
+        if (!text.includes("MousePadReceiver")) {
+            throw new Error("Invalid receiver response.");
         }
 
-        function renderQRCode(text, elementId) {
-            const container = document.getElementById(elementId);
-            container.innerHTML = '';
-            try {
-                const qr = qrcode(0, 'M');
-                qr.addData(text);
-                qr.make();
-                container.innerHTML = qr.createImgTag(5, 8);
-                const img = container.querySelector('img');
-                if (img) img.className = 'rounded-lg mx-auto';
-            } catch (e) {
-                container.innerText = 'Error generating QR code';
-            }
+        document.getElementById("pc-status-dot").className =
+            "w-3 h-3 rounded-full bg-emerald-500";
+
+        document.getElementById("pc-status-text").innerText =
+            "Receiver connected";
+
+        document.getElementById("pc-instruction").innerText =
+            "Scan this QR code with your phone.";
+
+        createPairingQr();
+
+    } catch (error) {
+
+        document.getElementById("pc-status-dot").className =
+            "w-3 h-3 rounded-full bg-red-500";
+
+        document.getElementById("pc-status-text").innerText =
+            "Receiver not found";
+
+        document.getElementById("pc-instruction").innerText =
+            "Make sure MousePadReceiver.exe is running.";
+
+        document.getElementById("qr-container").classList.add("hidden");
+
+        document.getElementById("pc-waiting").classList.add("hidden");
+
+    }
+
+}
+
+
+function getLocalIpFromUrl() {
+
+    const params = new URLSearchParams(location.search);
+
+    return params.get("host");
+
+}
+
+
+function createPairingQr() {
+
+    const host = getPcIpForPairing();
+
+    if (!host) {
+
+        document.getElementById("pc-instruction").innerText =
+            "PC address could not be determined automatically.";
+
+        document.getElementById("pc-address").classList.remove("hidden");
+
+        document.getElementById("pc-address").innerText =
+            "Open the receiver using your PC's local IP.";
+
+        return;
+
+    }
+
+    const pairingUrl =
+        location.origin +
+        location.pathname +
+        "?phone=1&host=" +
+        encodeURIComponent(host);
+
+    const qr = qrcode(0, "M");
+
+    qr.addData(pairingUrl);
+
+    qr.make();
+
+    const container =
+        document.getElementById("qr-container");
+
+    container.innerHTML = qr.createImgTag(6, 10);
+
+    const image = container.querySelector("img");
+
+    if (image) {
+        image.className = "mx-auto rounded-lg";
+    }
+
+    container.classList.remove("hidden");
+
+    document.getElementById("pc-waiting").classList.remove("hidden");
+
+}
+
+
+function getPcIpForPairing() {
+
+    const configuredIp =
+        localStorage.getItem("mousepad_pc_ip");
+
+    if (configuredIp) {
+        return configuredIp;
+    }
+
+    const currentHost =
+        window.location.hostname;
+
+    if (
+        currentHost &&
+        currentHost !== "localhost" &&
+        currentHost !== "127.0.0.1" &&
+        currentHost !== "::1"
+    ) {
+        return currentHost;
+    }
+
+    return null;
+
+}
+
+
+function askForPcIp() {
+
+    const existing =
+        localStorage.getItem("mousepad_pc_ip");
+
+    const ip = prompt(
+        "Enter this PC's local IPv4 address:",
+        existing || ""
+    );
+
+    if (!ip) {
+        return;
+    }
+
+    localStorage.setItem(
+        "mousepad_pc_ip",
+        ip.trim()
+    );
+
+    createPairingQr();
+
+}
+
+
+function startPhoneFromQr() {
+
+    const params =
+        new URLSearchParams(location.search);
+
+    const host =
+        params.get("host");
+
+    if (!host) {
+
+        showView("view-phone-connect");
+
+        document.getElementById("phone-status").innerText =
+            "No PC connection information was found.";
+
+        document.getElementById("phone-spinner").classList.add("hidden");
+
+        document.getElementById("phone-retry").classList.remove("hidden");
+
+        return;
+
+    }
+
+    currentRole = "phone";
+
+    receiverHost = host;
+
+    showView("view-phone-connect");
+
+    document.getElementById("phone-status").innerText =
+        "Connecting to PC receiver...";
+
+    connectToReceiver(host);
+
+}
+
+
+function connectToReceiver(host) {
+
+    if (socket) {
+
+        try {
+            socket.close();
+        } catch (e) {
         }
 
-        function showQrModal() { document.getElementById('qr-modal').classList.remove('hidden'); }
-        function hideQrModal() { document.getElementById('qr-modal').classList.add('hidden'); }
+    }
 
-        let cursorX = window.innerWidth / 2;
-        let cursorY = window.innerHeight / 2;
-        const speedMultiplier = 1.6;
+    const wsUrl =
+        "ws://" +
+        host +
+        ":" +
+        receiverPort +
+        "/mouse";
 
-        function updateVirtualCursorPosition(dx, dy) {
-            cursorX += dx * speedMultiplier;
-            cursorY += dy * speedMultiplier;
-            cursorX = Math.max(0, Math.min(window.innerWidth, cursorX));
-            cursorY = Math.max(0, Math.min(window.innerHeight, cursorY));
-            const cursorEl = document.getElementById('virtual-cursor');
-            cursorEl.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
-        }
+    socket = new WebSocket(wsUrl);
 
-        function triggerClickAnimation() {
-            const cursorEl = document.getElementById('virtual-cursor');
-            cursorEl.classList.add('scale-75', 'text-emerald-400');
-            setTimeout(() => cursorEl.classList.remove('scale-75', 'text-emerald-400'), 150);
-        }
+    socket.onopen = function() {
 
-        function setupLaptopConnectionHandlers() {
-            conn.on('open', () => {
-                isConnected = true;
-                document.getElementById('connection-status-dot').className = 'w-3 h-3 rounded-full bg-emerald-500';
-                document.getElementById('connection-status-text').innerText = 'Phone connected wirelessly!';
-                document.getElementById('laptop-welcome').classList.add('hidden');
-                document.getElementById('virtual-cursor').classList.remove('hidden');
-            });
+        isConnected = true;
 
-            conn.on('data', (data) => {
-                if (data.type === 'move') updateVirtualCursorPosition(data.dx, data.dy);
-                else if (data.type === 'click') triggerClickAnimation();
-                else if (data.type === 'scroll') window.scrollBy({ top: data.dy, behavior: 'smooth' });
-            });
+        document.getElementById("phone-conn-dot").className =
+            "w-2.5 h-2.5 rounded-full bg-emerald-500";
 
-            conn.on('close', () => {
-                isConnected = false;
-                document.getElementById('connection-status-dot').className = 'w-3 h-3 rounded-full bg-red-500';
-                document.getElementById('connection-status-text').innerText = 'Phone disconnected.';
-                document.getElementById('virtual-cursor').classList.add('hidden');
-                document.getElementById('laptop-welcome').classList.remove('hidden');
-            });
-        }
+        document.getElementById("phone-conn-text").innerText =
+            "Connected";
 
-        // ================= PHONE LOGIC =================
-        function connectToLaptopPeer(hostId) {
-            document.getElementById('phone-conn-text').innerText = 'Connecting to laptop...';
-            
-            peer = new Peer({
-                host: '0.peerjs.com',
-                port: 443,
-                secure: true,
-                debug: 1
-            });
+        showView("view-phone");
 
-            peer.on('open', () => {
-                conn = peer.connect(hostId, { reliable: true });
-                setupPhoneConnectionHandlers();
-            });
+        requestLandscape();
 
-            peer.on('error', (err) => {
-                console.error('Peer connection error:', err);
-                document.getElementById('phone-conn-text').innerText = 'Connection failed. Re-scan QR.';
-            });
-        }
+        initializeTrackpad();
 
-        function setupPhoneConnectionHandlers() {
-            conn.on('open', () => {
-                isConnected = true;
-                document.getElementById('phone-conn-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
-                document.getElementById('phone-conn-text').innerText = 'Connected to Laptop';
-                setupTrackpadGestures();
-            });
+    };
 
-            conn.on('close', () => {
-                isConnected = false;
-                document.getElementById('phone-conn-dot').className = 'w-2.5 h-2.5 rounded-full bg-red-500';
-                document.getElementById('phone-conn-text').innerText = 'Disconnected';
-            });
-        }
 
-        let lastTouchX = 0;
-        let lastTouchY = 0;
-        let touchStartTime = 0;
+    socket.onclose = function() {
 
-        function setupTrackpadGestures() {
-            const trackpad = document.getElementById('trackpad');
-            const gestureBadge = document.getElementById('gesture-badge');
+        isConnected = false;
 
-            trackpad.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (e.touches.length === 1) {
-                    lastTouchX = e.touches[0].clientX;
-                    lastTouchY = e.touches[0].clientY;
-                    touchStartTime = Date.now();
-                } else if (e.touches.length === 2) {
-                    lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                    lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                    gestureBadge.innerText = 'Scrolling';
-                    gestureBadge.classList.remove('opacity-0');
+        if (currentRole === "phone") {
+
+            document.getElementById("phone-conn-dot").className =
+                "w-2.5 h-2.5 rounded-full bg-red-500";
+
+            document.getElementById("phone-conn-text").innerText =
+                "Disconnected";
+
+            setTimeout(() => {
+
+                if (!isConnected) {
+
+                    showView("view-phone-connect");
+
+                    document.getElementById("phone-status").innerText =
+                        "Connection lost.";
+
+                    document.getElementById("phone-spinner").classList.add("hidden");
+
+                    document.getElementById("phone-retry").classList.remove("hidden");
+
                 }
-            }, { passive: false });
 
-            trackpad.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                if (!conn || !isConnected) return;
+            }, 500);
 
-                if (e.touches.length === 1) {
-                    const dx = e.touches[0].clientX - lastTouchX;
-                    const dy = e.touches[0].clientY - lastTouchY;
-                    lastTouchX = e.touches[0].clientX;
-                    lastTouchY = e.touches[0].clientY;
-                    conn.send({ type: 'move', dx: dx, dy: dy });
-                } else if (e.touches.length === 2) {
-                    const currentY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                    const dy = lastTouchY - currentY;
-                    lastTouchY = currentY;
-                    conn.send({ type: 'scroll', dy: dy * 3 });
-                }
-            }, { passive: false });
-
-            trackpad.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                gestureBadge.classList.add('opacity-0');
-                if (e.changedTouches.length === 1 && (Date.now() - touchStartTime < 200)) {
-                    if (conn && isConnected) conn.send({ type: 'click', button: 'left' });
-                }
-            }, { passive: false });
-
-            document.getElementById('btn-left').addEventListener('click', () => {
-                if (conn && isConnected) conn.send({ type: 'click', button: 'left' });
-            });
-            document.getElementById('btn-right').addEventListener('click', () => {
-                if (conn && isConnected) conn.send({ type: 'click', button: 'right' });
-            });
         }
 
-        function toggleKeyboard() {
-            const drawer = document.getElementById('keyboard-drawer');
-            drawer.classList.toggle('translate-y-full');
-            if (!drawer.classList.contains('translate-y-full')) {
-                document.getElementById('phone-text-input').focus();
+    };
+
+
+    socket.onerror = function() {
+
+        isConnected = false;
+
+        if (currentRole === "phone") {
+
+            document.getElementById("phone-status").innerText =
+                "Could not connect to PC receiver.";
+
+            document.getElementById("phone-spinner").classList.add("hidden");
+
+            document.getElementById("phone-retry").classList.remove("hidden");
+
+        }
+
+    };
+
+}
+
+
+function sendCommand(command) {
+
+    if (
+        socket &&
+        socket.readyState === WebSocket.OPEN
+    ) {
+
+        socket.send(
+            JSON.stringify(command)
+        );
+
+    }
+
+}
+
+
+function initializeTrackpad() {
+
+    if (trackpadInitialized) {
+        return;
+    }
+
+    trackpadInitialized = true;
+
+    const trackpad =
+        document.getElementById("trackpad");
+
+    const gestureBadge =
+        document.getElementById("gesture-badge");
+
+
+    trackpad.addEventListener(
+        "touchstart",
+        function(e) {
+
+            e.preventDefault();
+
+            touchMoved = false;
+
+            if (e.touches.length === 1) {
+
+                lastTouchX =
+                    e.touches[0].clientX;
+
+                lastTouchY =
+                    e.touches[0].clientY;
+
+                touchStartTime =
+                    Date.now();
+
             }
+
+            else if (e.touches.length === 2) {
+
+                lastTouchX =
+                    (
+                        e.touches[0].clientX +
+                        e.touches[1].clientX
+                    ) / 2;
+
+                lastTouchY =
+                    (
+                        e.touches[0].clientY +
+                        e.touches[1].clientY
+                    ) / 2;
+
+                gestureBadge.innerText =
+                    "Scrolling";
+
+                gestureBadge.classList.remove(
+                    "opacity-0"
+                );
+
+            }
+
+        },
+        {
+            passive: false
+        }
+    );
+
+
+    trackpad.addEventListener(
+        "touchmove",
+        function(e) {
+
+            e.preventDefault();
+
+            if (!isConnected) {
+                return;
+            }
+
+
+            if (e.touches.length === 1) {
+
+                const currentX =
+                    e.touches[0].clientX;
+
+                const currentY =
+                    e.touches[0].clientY;
+
+                const dx =
+                    currentX - lastTouchX;
+
+                const dy =
+                    currentY - lastTouchY;
+
+                lastTouchX = currentX;
+
+                lastTouchY = currentY;
+
+                touchMoved = true;
+
+                sendCommand({
+                    type: "move",
+                    dx: Math.round(dx),
+                    dy: Math.round(dy)
+                });
+
+            }
+
+
+            else if (e.touches.length === 2) {
+
+                const currentY =
+                    (
+                        e.touches[0].clientY +
+                        e.touches[1].clientY
+                    ) / 2;
+
+                const dy =
+                    lastTouchY - currentY;
+
+                lastTouchY = currentY;
+
+                touchMoved = true;
+
+                sendCommand({
+                    type: "scroll",
+                    dy: Math.round(dy * 3)
+                });
+
+            }
+
+        },
+        {
+            passive: false
+        }
+    );
+
+
+    trackpad.addEventListener(
+        "touchend",
+        function(e) {
+
+            e.preventDefault();
+
+            gestureBadge.classList.add(
+                "opacity-0"
+            );
+
+            if (
+                e.changedTouches.length === 1 &&
+                !touchMoved &&
+                Date.now() - touchStartTime < 200
+            ) {
+
+                sendCommand({
+                    type: "click",
+                    button: "left"
+                });
+
+            }
+
+        },
+        {
+            passive: false
+        }
+    );
+
+
+    document
+        .getElementById("btn-left")
+        .addEventListener(
+            "touchstart",
+            function(e) {
+
+                e.preventDefault();
+
+                sendCommand({
+                    type: "click",
+                    button: "left"
+                });
+
+            },
+            {
+                passive: false
+            }
+        );
+
+
+    document
+        .getElementById("btn-right")
+        .addEventListener(
+            "touchstart",
+            function(e) {
+
+                e.preventDefault();
+
+                sendCommand({
+                    type: "click",
+                    button: "right"
+                });
+
+            },
+            {
+                passive: false
+            }
+        );
+
+}
+
+
+function requestLandscape() {
+
+    if (
+        document.documentElement.requestFullscreen
+    ) {
+
+        document.documentElement
+            .requestFullscreen()
+            .catch(() => {});
+
+    }
+
+    if (
+        screen.orientation &&
+        screen.orientation.lock
+    ) {
+
+        screen.orientation
+            .lock("landscape")
+            .catch(() => {});
+
+    }
+
+}
+
+
+function disconnectPhone() {
+
+    isConnected = false;
+
+    if (socket) {
+
+        try {
+            socket.close();
+        } catch (e) {
         }
 
-        function sendTypedText() {
-            const input = document.getElementById('phone-text-input');
-            if (input.value && conn && isConnected) {
-                conn.send({ type: 'text', text: input.value });
-                input.value = '';
-                toggleKeyboard();
-            }
+    }
+
+    socket = null;
+
+    location.href =
+        location.pathname;
+
+}
+
+
+function resetToSetup() {
+
+    if (socket) {
+
+        try {
+            socket.close();
+        } catch (e) {
         }
-    </script>
+
+    }
+
+    socket = null;
+
+    currentRole = null;
+
+    receiverHost = null;
+
+    isConnected = false;
+
+    showView("view-pc-setup");
+
+}
+
+
+function closeError() {
+
+    document
+        .getElementById("error-modal")
+        .classList.add("hidden");
+
+}
+
+
+function showError(message) {
+
+    document
+        .getElementById("error-message")
+        .innerText = message;
+
+    document
+        .getElementById("error-modal")
+        .classList.remove("hidden");
+
+}
+
+
+function detectPhoneMode() {
+
+    const params =
+        new URLSearchParams(
+            location.search
+        );
+
+    if (
+        params.get("phone") === "1"
+    ) {
+
+        startPhoneFromQr();
+
+        return true;
+
+    }
+
+    return false;
+
+}
+
+
+window.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        if (!detectPhoneMode()) {
+
+            currentRole = "pc";
+
+            showView("view-pc-setup");
+
+        }
+
+    }
+);
+
+</script>
+
 </body>
 </html>
